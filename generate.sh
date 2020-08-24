@@ -3,6 +3,10 @@
 cf_ips="$(mktemp)"
 cp_ip_config="/etc/nginx/conf.d/cloudflare-set-real-ip.conf"
 
+if [ "$1" = "--cron" ]; then
+    sleep $((RANDOM % 900))
+fi
+
 chmod 644 "$cf_ips"
 
 curl --compressed -sLo- https://www.cloudflare.com/ips-v4 >> "$cf_ips"
