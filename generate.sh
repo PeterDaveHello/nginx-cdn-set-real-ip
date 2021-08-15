@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cf_ips="$(mktemp)"
-cf_ip_config="/etc/nginx/conf.d/cloudflare-set-real-ip.conf"
+cf_ip_config="${cf_ip_config:-/etc/nginx/conf.d/cloudflare-set-real-ip.conf}"
 
 if [ "$1" = "--cron" ]; then
     sleep $((RANDOM % 900))
