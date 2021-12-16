@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 cf_ips="$(mktemp)"
 cf_ip_config="${cf_ip_config:-/etc/nginx/conf.d/cloudflare-set-real-ip.conf}"
 
