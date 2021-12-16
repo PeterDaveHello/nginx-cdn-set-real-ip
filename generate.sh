@@ -19,4 +19,4 @@ done
 sed -i -e 's/^/set_real_ip_from /g' -e 's/$/;/g' "$cf_ips"
 sed -i -e '1i real_ip_header CF-Connecting-IP;'  "$cf_ips"
 
-mv "$cf_ips" "$cf_ip_config"
+mv -f "$cf_ips" "$cf_ip_config"
