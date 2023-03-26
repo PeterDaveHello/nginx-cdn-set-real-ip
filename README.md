@@ -1,20 +1,39 @@
 # nginx-cloudflare-set-real-ip
 
-Generate config to set correct client IP address in nginx, based on Cloudflare's IP address and `CF-Connecting-IP` header.
+This script generates an nginx configuration file that sets the correct client IP address based on Cloudflare's IP addresses and the `CF-Connecting-IP` header.
 
-The script will fetch the latest Cloudflare IP addresses and generate corresponding nginx config file in `/etc/nginx/conf.d/cloudflare-set-real-ip.conf`
+## Usage
 
-Use a cronjob to trigger this IP update script periodically, and reload your nginx instance for the new config.
+You can either clone this repository to your server, or download the script directly from the repository:
 
-## Example
+```sh
+# Clone the repository
+git clone https://github.com/PeterDaveHello/nginx-cloudflare-set-real-ip /opt/nginx-cloudflare-set-real-ip
 
-`/etc/cron.d/opt/nginx-cloudflare-set-real-ip`:
+# OR download the script directly
+mkdir -p /opt/nginx-cloudflare-set-real-ip/
+curl -sLo /opt/nginx-cloudflare-set-real-ip/generate.sh https://raw.githubusercontent.com/PeterDaveHello/nginx-cloudflare-set-real-ip/master/generate.sh
+```
+
+> Note: The `/opt` directory may require root privileges to write to. If you encounter permission errors, you may need to run the above commands with `sudo`.
+
+Then add a cronjob to trigger the IP update script periodically and reload nginx for the new config. For example, create `/etc/cron.d/opt/nginx-cloudflare-set-real-ip` with the following contents:
 
 ```cron
 1 1 * * * root /opt/nginx-cloudflare-set-real-ip/generate.sh --cron && /usr/sbin/service nginx reload
 ```
 
+This will run the script every day at 01:01 AM and reload nginx with the new configuration.
+
+## How it Works
+
+The script fetches the latest Cloudflare IP addresses from <https://www.cloudflare.com/ips/> and generates an nginx configuration file in `/etc/nginx/conf.d/cloudflare-set-real-ip.conf`.
+
+It uses the `set_real_ip_from` directive to specify the trusted Cloudflare IP addresses and the `real_ip_header` directive to set the `CF-Connecting-IP` header as the source of the real IP address.
+
+If there are no changes to the Cloudflare IP addresses, the script will exit without updating the configuration file.
+
 ## Reference
 
-- https://www.cloudflare.com/ips/
-- https://support.cloudflare.com/hc/en-us/articles/200170986-How-does-Cloudflare-handle-HTTP-Request-headers-
+- <https://www.cloudflare.com/ips/>
+- <https://support.cloudflare.com/hc/en-us/articles/200170986-How-does-Cloudflare-handle-HTTP-Request-headers->
