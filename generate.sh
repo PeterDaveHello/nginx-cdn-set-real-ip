@@ -2,9 +2,9 @@
 
 set -euo pipefail
 
-cf_ips="$(mktemp)"
-cf_ip_config="${cf_ip_config:-/etc/nginx/conf.d/cloudflare-set-real-ip.conf}"
-trap 'rm -f "$cf_ips"' EXIT
+temp_ips="$(mktemp)"
+nginx_ip_conf_dir="${nginx_ip_conf_dir:-/etc/nginx/conf.d}"
+trap 'rm -f "$temp_ips"' EXIT
 
 for cmd in curl sed mv chmod rm cmp; do
     command -v "$cmd" >/dev/null || { echo >&2 "Error: $cmd not found. Please make sure it's installed and try again."; exit 1; }
@@ -14,26 +14,42 @@ if [ "${1:-}" = "--cron" ]; then
     sleep $((RANDOM % 900))
 fi
 
-chmod 644 "$cf_ips"
+declare -A CDN_NAME CDN_IP_HEADER
 
-echo "Fetching Cloudflare IP addresses..."
+CDN_NAME["cf"]="Cloudflare"
+CDN_IP_HEADER["cf"]="CF-Connecting-IP"
 
-for file in ips-v4 ips-v6; do
-    curl --compressed -sLo- "https://www.cloudflare.com/$file" >> "$cf_ips"
-    echo '' >> "$cf_ips"
+fetch_ip_list() {
+    true > "$temp_ips"
+    case $1 in
+    "cf")
+        for file in ips-v4 ips-v6; do
+            curl --compressed -sLo- "https://www.cloudflare.com/$file" >> "$temp_ips"
+            echo '' >> "$temp_ips"
+        done
+        ;;
+    esac
+}
+
+chmod 644 "$temp_ips"
+
+for cdn in "${!CDN_NAME[@]}"; do
+    echo "Fetching ${CDN_NAME[$cdn]} IP addresses..."
+    fetch_ip_list "$cdn"
+    nginx_ip_conf="$nginx_ip_conf_dir/${CDN_NAME[$cdn],,}-set-real-ip.conf"
+    echo "Generating nginx configuration file..."
+    sed -i -e 's/^/set_real_ip_from /g' -e 's/$/;/g' -e "1i real_ip_header ${CDN_IP_HEADER[$cdn]};" "$temp_ips"
+
+    if ! [ -e "$nginx_ip_conf" ]; then
+        mv -f "$temp_ips" "$nginx_ip_conf"
+        echo "Nginx configuration for ${CDN_NAME[$cdn]} IP addresses added successfully."
+    elif cmp -s "$temp_ips" "$nginx_ip_conf"; then
+        echo "No changes detected. We have nothing to do."
+        rm -f "$temp_ips"
+    else
+        echo "${CDN_NAME[$cdn]} IP addresses config have changed. Updating nginx configuration..."
+        mv -f "$temp_ips" "$nginx_ip_conf"
+        echo "Nginx configuration for ${CDN_NAME[$cdn]} IP addresses updated successfully."
+    fi
+    echo
 done
-
-echo "Generating nginx configuration file..."
-sed -i -e 's/^/set_real_ip_from /g' -e 's/$/;/g' -e '1i real_ip_header CF-Connecting-IP;' "$cf_ips"
-
-if ! [ -e "$cf_ip_config" ]; then
-    mv -f "$cf_ips" "$cf_ip_config"
-    echo "Nginx configuration for Cloudflare IP addresses added successfully."
-elif cmp -s "$cf_ips" "$cf_ip_config"; then
-    echo "No changes detected. We have nothing to do."
-    rm -f "$cf_ips"
-else
-    echo "Cloudflare IP addresses config have changed. Updating nginx configuration..."
-    mv -f "$cf_ips" "$cf_ip_config"
-    echo "Nginx configuration for Cloudflare IP addresses updated successfully."
-fi
