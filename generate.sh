@@ -4,15 +4,12 @@ set -euo pipefail
 
 temp_ips="$(mktemp)"
 nginx_ip_conf_dir="${nginx_ip_conf_dir:-/etc/nginx/conf.d}"
+sleep_secs="0"
 trap 'rm -f "$temp_ips"' EXIT
 
 for cmd in curl sed mv chmod rm cmp; do
     command -v "$cmd" >/dev/null || { echo >&2 "Error: $cmd not found. Please make sure it's installed and try again."; exit 1; }
 done
-
-if [ "${1:-}" = "--cron" ]; then
-    sleep $((RANDOM % 900))
-fi
 
 declare -A CDN_NAME CDN_IP_HEADER
 
@@ -31,7 +28,18 @@ fetch_ip_list() {
     esac
 }
 
+for arg in "$@"; do
+    case $arg in
+    "--cron")
+        sleep_secs="$((RANDOM % 900))"
+        continue
+        ;;
+    esac
+done
+
 chmod 644 "$temp_ips"
+
+sleep "$sleep_secs"
 
 for cdn in "${!CDN_NAME[@]}"; do
     echo "Fetching ${CDN_NAME[$cdn]} IP addresses..."
