@@ -28,8 +28,27 @@ fetch_ip_list() {
     esac
 }
 
+help() {
+    echo >&2
+    echo >&2 "This tool help generates nginx config file that sets the correct client IP address based on CDN provider's IP addresses and the corresponding header."
+    echo >&2 ""
+    echo >&2 "Usage:"
+    echo >&2 ""
+    echo >&2 "$0 [--cron]"
+    echo >&2 ""
+    echo >&2 "Supported CDN:"
+    echo >&2 ""
+    for cdn in "${!CDN_NAME[@]}"; do
+        echo >&2 "- $cdn (${CDN_NAME[$cdn]}, using http header ${CDN_IP_HEADER[$cdn]})"
+    done
+}
+
 for arg in "$@"; do
     case $arg in
+    "-h"|"--help")
+        help
+        exit
+        ;;
     "--cron")
         sleep_secs="$((RANDOM % 900))"
         continue
