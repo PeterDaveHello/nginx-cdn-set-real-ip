@@ -11,7 +11,7 @@ for cmd in curl sed mv chmod rm cmp; do
     command -v "$cmd" >/dev/null || { echo >&2 "Error: $cmd not found. Please make sure it's installed and try again."; exit 1; }
 done
 
-declare -A CDN_NAME CDN_IP_HEADER
+declare -A CDN_NAME CDN_IP_HEADER REQUESTED_CDN
 
 CDN_NAME["cf"]="Cloudflare"
 CDN_IP_HEADER["cf"]="CF-Connecting-IP"
@@ -32,9 +32,11 @@ help() {
     echo >&2
     echo >&2 "This tool help generates nginx config file that sets the correct client IP address based on CDN provider's IP addresses and the corresponding header."
     echo >&2 ""
+    echo >&2 "You need to give me at least one of supported CDN providers here to generate the config."
+    echo >&2 ""
     echo >&2 "Usage:"
     echo >&2 ""
-    echo >&2 "$0 [--cron]"
+    echo >&2 "$0 [--cron] <CDN> [[CDN] [CDN]]"
     echo >&2 ""
     echo >&2 "Supported CDN:"
     echo >&2 ""
@@ -54,13 +56,23 @@ for arg in "$@"; do
         continue
         ;;
     esac
+
+    REQUESTED_CDN[$arg]=1
 done
 
 chmod 644 "$temp_ips"
 
+if [ ! -v 'REQUESTED_CDN[@]' ]; then
+    echo >&2
+    echo >&2 "No valid CDN found!"
+    help
+    exit 1
+fi
+
 sleep "$sleep_secs"
 
-for cdn in "${!CDN_NAME[@]}"; do
+for cdn in "${!REQUESTED_CDN[@]}"; do
+    echo
     echo "Fetching ${CDN_NAME[$cdn]} IP addresses..."
     fetch_ip_list "$cdn"
     nginx_ip_conf="$nginx_ip_conf_dir/${CDN_NAME[$cdn],,}-set-real-ip.conf"
@@ -78,5 +90,4 @@ for cdn in "${!CDN_NAME[@]}"; do
         mv -f "$temp_ips" "$nginx_ip_conf"
         echo "Nginx configuration for ${CDN_NAME[$cdn]} IP addresses updated successfully."
     fi
-    echo
 done
