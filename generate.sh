@@ -82,12 +82,15 @@ if [ ! -v 'REQUESTED_CDN[@]' ]; then
 fi
 
 sleep "$sleep_secs"
+echo "Start nginx real client ip config generation..."
 
 for cdn in "${!REQUESTED_CDN[@]}"; do
+    nginx_ip_conf="$nginx_ip_conf_dir/${CDN_NAME[$cdn],,}-set-real-ip.conf"
+    echo
+    echo "Config target: $nginx_ip_conf"
     echo
     echo "Fetching ${CDN_NAME[$cdn]} IP addresses..."
     fetch_ip_list "$cdn"
-    nginx_ip_conf="$nginx_ip_conf_dir/${CDN_NAME[$cdn],,}-set-real-ip.conf"
     echo "Generating nginx configuration file..."
     sed -i -e 's/^/set_real_ip_from /g' -e 's/$/;/g' -e "1i real_ip_header ${CDN_IP_HEADER[$cdn]};" "$temp_ips"
 
