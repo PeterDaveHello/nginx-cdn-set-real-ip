@@ -5,6 +5,7 @@ This script generates an nginx configuration file that sets the correct client I
 ## Supported CDN
 
 - Cloudflare
+- Fastly
 
 ## Usage
 
@@ -43,3 +44,8 @@ If there are no changes to the CDN IP addresses, the script will exit without up
 
 - <https://www.cloudflare.com/ips/>
 - <https://support.cloudflare.com/hc/en-us/articles/200170986-How-does-Cloudflare-handle-HTTP-Request-headers->
+
+### Fastly
+
+- <https://api.fastly.com/public-ip-list>
+- <https://developer.fastly.com/reference/api/utils/public-ip-list/>

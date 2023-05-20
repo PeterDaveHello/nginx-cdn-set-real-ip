@@ -16,6 +16,9 @@ declare -A CDN_NAME CDN_IP_HEADER REQUESTED_CDN
 CDN_NAME["cf"]="Cloudflare"
 CDN_IP_HEADER["cf"]="CF-Connecting-IP"
 
+CDN_NAME["fastly"]="Fastly"
+CDN_IP_HEADER["fastly"]="Fastly-Client-IP"
+
 fetch_ip_list() {
     true > "$temp_ips"
     case $1 in
@@ -24,6 +27,11 @@ fetch_ip_list() {
             curl --compressed -sLo- "https://www.cloudflare.com/$file" >> "$temp_ips"
             echo '' >> "$temp_ips"
         done
+        ;;
+    "fastly")
+        curl --compressed -sLo- https://api.fastly.com/public-ip-list | \
+            awk -F'[]["]' '{for(i=1;i<=NF;i++) if ($i ~ /.*\/.*/) print $i}' | \
+            sed 's/,\|\"//g' >> "$temp_ips"
         ;;
     esac
 }
