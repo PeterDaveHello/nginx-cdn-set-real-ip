@@ -4,10 +4,10 @@ This script generates an nginx configuration file that sets the correct client I
 
 ## Supported CDN
 
-- Cloudflare
-- Fastly
+- Cloudflare (`cf`, using header `CF-Connecting-IP`)
+- Fastly (`fastly`, using header `Fastly-Client-IP`)
 
-## Usage
+## Installation
 
 You can either clone this repository to your server, or download the script directly from the repository:
 
@@ -22,10 +22,37 @@ curl -sLo /opt/nginx-cdn-set-real-ip/generate.sh https://raw.githubusercontent.c
 
 > Note: The `/opt` directory may require root privileges to write to. If you encounter permission errors, you may need to run the above commands with `sudo`.
 
-Then add a cronjob to trigger the IP update script periodically and reload nginx for the new config. For example, create `/etc/cron.d/opt/nginx-cdn-set-real-ip` with the following contents:
+## Usage
+
+To execute the script, ensure correct permissions and include supported CDN codes separated by a space if multiple CDNs are needed:
+
+```sh
+./generate.sh <CDN> [[CDN] [CDN]]
+```
+
+For example:
+
+```sh
+$ sudo /opt/nginx-cdn-set-real-ip/generate.sh cf
+Start nginx real client ip config generation...
+
+Config target: /etc/nginx/conf.d/cloudflare-set-real-ip.conf
+
+Fetching Cloudflare IP addresses...
+Generating nginx configuration file...
+Nginx configuration for Cloudflare IP addresses added successfully.
+```
+
+### Cronjob
+
+The script supports a `--cron` argument that causes it to randomly pause for 0-900 seconds before executing, in order to prevent sending too many requests to the CDN from the same region and avoid excessive updates occurring simultaneously.
+
+You can add a cronjob with supported CDN to trigger the IP update script periodically and reload nginx for the new config.
+
+For example, create `/etc/cron.d/opt/nginx-cdn-set-real-ip` with the following contents:
 
 ```cron
-1 1 * * * root /opt/nginx-cdn-set-real-ip/generate.sh --cron && /usr/sbin/service nginx reload
+1 1 * * * root /opt/nginx-cdn-set-real-ip/generate.sh fastly --cron && /usr/sbin/service nginx reload
 ```
 
 This will run the script every day at 01:01 AM and reload nginx with the new configuration.
