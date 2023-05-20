@@ -84,6 +84,8 @@ fi
 sleep "$sleep_secs"
 echo "Start nginx real client ip config generation..."
 
+mkdir -p "$nginx_ip_conf_dir"
+
 for cdn in "${!REQUESTED_CDN[@]}"; do
     nginx_ip_conf="$nginx_ip_conf_dir/${CDN_NAME[$cdn],,}-set-real-ip.conf"
     echo
