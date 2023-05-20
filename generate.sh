@@ -65,6 +65,10 @@ for arg in "$@"; do
         ;;
     esac
 
+    if [ ! -v CDN_NAME["$arg"] ]; then
+        echo >&2 "\"$arg\" is not in the supported CDN list nor the supported argument, skipped..."
+        continue
+    fi
     REQUESTED_CDN[$arg]=1
 done
 
